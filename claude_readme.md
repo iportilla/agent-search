@@ -169,7 +169,7 @@ Add the following (adjust paths to match your system):
     "search-agent": {
       "command": "python3",
       "args": [
-        "/Users/YOUR_USERNAME/Downloads/agent-lab-1/search_agent/mcp_search_server_local.py"
+        "/Users/YOUR_USERNAME/../mcp_search_server_local.py"
       ],
       "env": {
         "TAVILY_API_KEY": "tvly-YOUR_API_KEY_HERE"
