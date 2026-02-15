@@ -23,7 +23,7 @@ mcp = FastMCP("mcp-search-agent")
 # Initialize Tavily Client
 # It will look for TAVILY_API_KEY in environment variables.
 # Fallback to the key provided in the original script if not found, for convenience.
-DEFAULT_API_KEY = "tvly-XXX
+# DEFAULT_API_KEY = "tvly-XXX"
 api_key = os.environ.get("TAVILY_API_KEY", DEFAULT_API_KEY)
 tavily = TavilyClient(api_key=api_key)
 
