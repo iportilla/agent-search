@@ -277,7 +277,7 @@ Open the config file:
 code ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
-Add the remote server (replace `CLOUD_IP` with your VM's actual IP address):
+**Option A — Direct URL (Claude Desktop 2025.3+):**
 
 ```json
 {
@@ -289,7 +289,26 @@ Add the remote server (replace `CLOUD_IP` with your VM's actual IP address):
 }
 ```
 
-> **Note:** For remote servers, you only need the `url` field — no `command` or `args`.
+**Option B — Using `mcp-remote` bridge (all versions):**
+
+If your Claude Desktop version doesn't support the `"url"` field, use [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) to bridge stdio ↔ Streamable HTTP. Requires Node.js / `npx`.
+
+```json
+{
+  "mcpServers": {
+    "search-agent": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://CLOUD_IP:8080/mcp"
+      ]
+    }
+  }
+}
+```
+
+> **Tip:** Use the full path to `npx` (run `which npx` to find it). Claude Desktop does not inherit your shell's `PATH`.
 
 ### 6. Restart Claude Desktop
 
