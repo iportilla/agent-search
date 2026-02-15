@@ -11,8 +11,8 @@ endif
 TAVILY_API_KEY ?= $(tavily_api_key)
 
 # Cloud deployment settings
-CLOUD_IP ?= your-cloud-ip
-MCP_PORT ?= 8000
+CLOUD_IP ?= 44.249.244.232
+MCP_PORT ?= 8080
 
 .PHONY: build build-local run run-local run-cloud deploy stop-cloud clean
 
