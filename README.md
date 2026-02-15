@@ -14,7 +14,7 @@ graph LR
     Server <-->|HTTPS| Tavily[Tavily API]
 ```
 
-### Cloud Mode (SSE over HTTP)
+### Cloud Mode (Streamable HTTP)
 
 ```mermaid
 graph LR
@@ -73,7 +73,7 @@ graph TD
 
     Cloud --> C1[Build image locally]
     C1 --> C2[Deploy to VM]
-    C2 --> C3[Run in SSE mode]
+    C2 --> C3[Run in streamable-http mode]
     C3 --> C4["Point Claude Desktop to http://CLOUD_IP:8080/mcp"]
 ```
 
@@ -189,7 +189,7 @@ Quit (`Cmd + Q`) and reopen. The server will be available.
 
 ## Option 3: Cloud VM Deployment
 
-Deploy the MCP server to a remote VM so Claude Desktop connects over the network via SSE.
+Deploy the MCP server to a remote VM so Claude Desktop connects over the network via Streamable HTTP.
 
 ### Deployment Flow
 
