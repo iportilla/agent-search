@@ -22,13 +22,13 @@ graph LR
         Claude[Claude Desktop]
     end
     subgraph Cloud VM ["Cloud VM (CLOUD_IP)"]
-        Server[mcp-search-agent :8000]
+        Server[mcp-search-agent :8080]
     end
     subgraph External
         Tavily[Tavily API]
     end
 
-    Claude <-->|"SSE · http://CLOUD_IP:8000/sse"| Server
+    Claude <-->|"Streamable HTTP · http://CLOUD_IP:8080/mcp"| Server
     Server <-->|HTTPS| Tavily
 ```
 
@@ -74,7 +74,7 @@ graph TD
     Cloud --> C1[Build image locally]
     C1 --> C2[Deploy to VM]
     C2 --> C3[Run in SSE mode]
-    C3 --> C4["Point Claude Desktop to http://CLOUD_IP:8000/sse"]
+    C3 --> C4["Point Claude Desktop to http://CLOUD_IP:8080/mcp"]
 ```
 
 ---
@@ -202,9 +202,9 @@ sequenceDiagram
 
     Dev->>Dev: docker build -t mcp-search-agent .
     Dev->>VM: docker save | scp | docker load
-    VM->>VM: docker run --transport sse -p 8000:8000
-    Note over VM: Server listening on :8000
-    Claude->>VM: SSE connection to http://CLOUD_IP:8000/sse
+    VM->>VM: docker run --transport streamable-http -p 8080:8000
+    Note over VM: Server listening on :8080
+    Claude->>VM: HTTP connection to http://CLOUD_IP:8080/mcp
     Claude->>VM: tavily_search(query="...")
     VM->>Tavily: POST /search
     Tavily-->>VM: JSON results
@@ -230,7 +230,7 @@ This will:
 1. Save the Docker image to a tarball
 2. Upload it to the VM via `scp`
 3. Load it into Docker on the VM
-4. Start the container in SSE mode on port 8000
+4. Start the container on port 8080
 
 **Option B — Manual steps:**
 
@@ -243,31 +243,31 @@ scp /tmp/mcp-search-agent.tar.gz user@CLOUD_IP:/tmp/
 ssh user@CLOUD_IP
 docker load < /tmp/mcp-search-agent.tar.gz
 docker run -d --name mcp-search-agent --restart unless-stopped \
-  -p 8000:8000 \
+  -p 8080:8000 \
   -e TAVILY_API_KEY=tvly-YOUR_KEY \
-  mcp-search-agent --transport sse
+  mcp-search-agent --transport streamable-http
 ```
 
 ### 3. Open Firewall Port
 
-Ensure port **8000** is open on your cloud VM's firewall / security group:
+Ensure port **8080** is open on your cloud VM's firewall / security group:
 
 | Cloud Provider | Command / Setting |
 |----------------|-------------------|
-| **AWS** | Security Group → Inbound → TCP 8000 |
-| **GCP** | `gcloud compute firewall-rules create allow-mcp --allow tcp:8000` |
-| **Azure** | NSG → Inbound → TCP 8000 |
-| **Generic** | `sudo ufw allow 8000/tcp` |
+| **AWS** | Security Group → Inbound → TCP 8080 |
+| **GCP** | `gcloud compute firewall-rules create allow-mcp --allow tcp:8080` |
+| **Azure** | NSG → Inbound → TCP 8080 |
+| **Generic** | `sudo ufw allow 8080/tcp` |
 
 ### 4. Verify the Server Is Running
 
 From your local machine:
 
 ```bash
-curl http://CLOUD_IP:8000/sse
+curl http://CLOUD_IP:8080/mcp
 ```
 
-You should see an SSE event stream connection (it will hang open — that's correct). Press `Ctrl+C` to stop.
+You should see an HTTP response (it will hang open — that's correct). Press `Ctrl+C` to stop.
 
 ### 5. Configure Claude Desktop
 
@@ -283,13 +283,13 @@ Add the remote server (replace `CLOUD_IP` with your VM's actual IP address):
 {
   "mcpServers": {
     "search-agent": {
-      "url": "http://CLOUD_IP:8000/sse"
+      "url": "http://CLOUD_IP:8080/mcp"
     }
   }
 }
 ```
 
-> **Note:** For remote SSE servers, you only need the `url` field — no `command` or `args`.
+> **Note:** For remote servers, you only need the `url` field — no `command` or `args`.
 
 ### 6. Restart Claude Desktop
 
@@ -365,8 +365,8 @@ tail -f ~/Library/Logs/Claude/mcp*.log
 | API errors | Invalid Tavily key | Verify key at [tavily.com](https://tavily.com/) |
 | Python not found | Wrong path in config | Use full absolute path to `python3` and script |
 | Permission denied | Script not executable | Run `chmod +x mcp_search_server.py` |
-| Cloud: connection refused | Firewall blocking port | Open port 8000 in security group / `ufw` |
-| Cloud: SSE timeout | Wrong IP or server not running | Verify with `curl http://CLOUD_IP:8000/sse` |
+| Cloud: connection refused | Firewall blocking port | Open port 8080 in security group / `ufw` |
+| Cloud: connection timeout | Wrong IP or server not running | Verify with `curl http://CLOUD_IP:8080/mcp` |
 
 ### Test the Server Manually
 
@@ -380,12 +380,12 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}' | python3 mcp_search_server_local.py
 ```
 
-**Cloud Docker (SSE):**
+**Cloud Docker (Streamable HTTP):**
 ```bash
-curl http://CLOUD_IP:8000/sse
+curl http://CLOUD_IP:8080/mcp
 ```
 
-For stdio modes, you'll see a JSON response with server capabilities. For SSE, a hanging connection confirms the server is live.
+For stdio modes, you'll see a JSON response with server capabilities. For HTTP, a hanging connection confirms the server is live.
 
 ---
 
@@ -394,9 +394,9 @@ For stdio modes, you'll see a JSON response with server capabilities. For SSE, a
 | File | Purpose |
 |------|---------|
 | `mcp_search_server_local.py` | Local MCP server — stdio only, minimal |
-| `mcp_search_server.py` | Cloud MCP server — stdio + SSE transport |
+| `mcp_search_server.py` | Cloud MCP server — stdio + streamable-http transport |
 | `Dockerfile.local` | Local Docker image — stdio, no exposed ports |
-| `Dockerfile` | Cloud Docker image — SSE, exposes port 8000 |
+| `Dockerfile` | Cloud Docker image — exposes port 8000 (mapped to 8080 on host) |
 | `Makefile` | `build-local`, `run-local`, `build`, `deploy`, etc. |
 | `tavily_client.py` | Standalone Tavily client (for testing) |
 | `requirements.txt` | Python dependencies |

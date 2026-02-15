@@ -49,7 +49,7 @@ run-cloud:
 	docker run -d --name $(IMAGE_NAME) --restart unless-stopped \
 		-p $(MCP_PORT):8000 \
 		-e TAVILY_API_KEY=$(TAVILY_API_KEY) \
-		$(IMAGE_NAME) --transport sse
+		$(IMAGE_NAME) --transport streamable-http
 
 # Deploy to cloud VM via SSH + Docker
 deploy:
@@ -69,8 +69,8 @@ deploy:
 		docker run -d --name $(IMAGE_NAME) --restart unless-stopped \
 			-p $(MCP_PORT):8000 \
 			-e TAVILY_API_KEY=$(TAVILY_API_KEY) \
-			$(IMAGE_NAME) --transport sse && \
-		echo 'Server running at http://$(CLOUD_IP):$(MCP_PORT)/sse'"
+			$(IMAGE_NAME) --transport streamable-http && \
+		echo 'Server running at http://$(CLOUD_IP):$(MCP_PORT)/mcp'"
 	@rm -f /tmp/$(IMAGE_NAME).tar.gz
 
 stop-cloud:
