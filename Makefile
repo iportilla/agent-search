@@ -14,7 +14,7 @@ TAVILY_API_KEY ?= $(tavily_api_key)
 CLOUD_IP ?= 44.249.244.232
 MCP_PORT ?= 8080
 
-.PHONY: build build-local run run-local run-cloud deploy stop-cloud clean
+.PHONY: build build-local run run-local run-cloud deploy stop stop-cloud clean
 
 # ── Local (stdio) ────────────────────────────────────────────
 
@@ -72,6 +72,9 @@ deploy:
 			$(IMAGE_NAME) --transport streamable-http && \
 		echo 'Server running at http://$(CLOUD_IP):$(MCP_PORT)/mcp'"
 	@rm -f /tmp/$(IMAGE_NAME).tar.gz
+
+stop:
+	docker stop $(IMAGE_NAME) 2>/dev/null; docker rm $(IMAGE_NAME) 2>/dev/null || true
 
 stop-cloud:
 	docker stop $(IMAGE_NAME) && docker rm $(IMAGE_NAME)
