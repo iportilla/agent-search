@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "search-agent": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "http://CLOUD_IP:8080/mcp",
+        "--allow-http"
+      ]
+    }
+  },
+  "preferences": {
+    "sidebarMode": "chat",
+    "coworkScheduledTasksEnabled": false
+  }
+}
