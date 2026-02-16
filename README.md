@@ -213,6 +213,8 @@ sequenceDiagram
 
 ### 1. Build the Docker Image (locally)
 
+> **Important:** The image must match the VM's architecture. If you're on Apple Silicon (arm64) and the VM is x86 (amd64), the Makefile handles this automatically with `--platform linux/amd64`.
+
 ```bash
 cd search_agent
 make build
@@ -261,13 +263,16 @@ Ensure port **8080** is open on your cloud VM's firewall / security group:
 
 ### 4. Verify the Server Is Running
 
-From your local machine:
+From your local machine, send an MCP initialize request:
 
 ```bash
-curl http://CLOUD_IP:8080/mcp
+curl -s -X POST http://CLOUD_IP:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"protocolVersion":"2025-03-26","clientInfo":{"name":"test","version":"0.1"}}}'
 ```
 
-You should see an HTTP response (it will hang open — that's correct). Press `Ctrl+C` to stop.
+You should see a JSON response with `serverInfo` and `capabilities`. If you get `exec format error` in the container logs, rebuild the image with the correct platform (see step 1).
 
 ### 5. Configure Claude Desktop
 
@@ -331,6 +336,29 @@ ssh user@CLOUD_IP "docker stop mcp-search-agent && docker rm mcp-search-agent"
 ssh user@CLOUD_IP "docker restart mcp-search-agent"
 ```
 
+### After a VM Reboot
+
+The container is created with `--restart unless-stopped`, so it will auto-start when Docker starts. Ensure Docker itself is enabled on boot:
+
+```bash
+# Check if Docker starts on boot
+ssh user@CLOUD_IP "sudo systemctl is-enabled docker"
+
+# Enable if needed
+ssh user@CLOUD_IP "sudo systemctl enable docker"
+```
+
+If the container was removed, recreate it:
+
+```bash
+ssh user@CLOUD_IP "docker run -d --name mcp-search-agent --restart unless-stopped \
+  -p 8080:8000 \
+  -e TAVILY_API_KEY=tvly-YOUR_KEY \
+  mcp-search-agent --transport streamable-http"
+```
+
+The Docker image persists on the VM — you only need to re-upload it if you rebuild locally.
+
 ---
 
 ## Verifying the Connection
@@ -387,6 +415,9 @@ tail -f ~/Library/Logs/Claude/mcp*.log
 | Permission denied | Script not executable | Run `chmod +x mcp_search_server.py` |
 | Cloud: connection refused | Firewall blocking port | Open port 8080 in security group / `ufw` |
 | Cloud: connection timeout | Wrong IP or server not running | Verify with `curl http://CLOUD_IP:8080/mcp` |
+| Cloud: exec format error | Image built for wrong architecture | Rebuild with `--platform linux/amd64` (see Makefile) |
+| mcp-remote: Non-HTTPS error | `mcp-remote` blocks plain HTTP | Add `"--allow-http"` to args |
+| mcp-remote: Server disconnected | Cloud server not running or old code | Check VM container logs: `docker logs mcp-search-agent` |
 
 ### Test the Server Manually
 
@@ -402,10 +433,13 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}
 
 **Cloud Docker (Streamable HTTP):**
 ```bash
-curl http://CLOUD_IP:8080/mcp
+curl -s -X POST http://CLOUD_IP:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{},"protocolVersion":"2025-03-26","clientInfo":{"name":"test","version":"0.1"}}}'
 ```
 
-For stdio modes, you'll see a JSON response with server capabilities. For HTTP, a hanging connection confirms the server is live.
+For stdio modes, you'll see a JSON response with server capabilities. For HTTP, you should get a JSON response containing `serverInfo` and `capabilities`.
 
 ---
 
