@@ -28,10 +28,10 @@ run-local:
 	fi
 	docker run -i --rm -e TAVILY_API_KEY=$(TAVILY_API_KEY) $(IMAGE_NAME_LOCAL)
 
-# ── Cloud / SSE ──────────────────────────────────────────────
+# ── Cloud / Streamable HTTP ─────────────────────────────────
 
 build:
-	docker build -t $(IMAGE_NAME) .
+	docker build --platform linux/amd64 -t $(IMAGE_NAME) .
 
 run:
 	@if [ -z "$(TAVILY_API_KEY)" ]; then \

@@ -301,14 +301,15 @@ If your Claude Desktop version doesn't support the `"url"` field, use [`mcp-remo
       "args": [
         "-y",
         "mcp-remote",
-        "http://CLOUD_IP:8080/mcp"
+        "http://CLOUD_IP:8080/mcp",
+        "--allow-http"
       ]
     }
   }
 }
 ```
 
-> **Tip:** Use the full path to `npx` (run `which npx` to find it). Claude Desktop does not inherit your shell's `PATH`.
+> **Tip:** Use the full path to `npx` (run `which npx` to find it). Claude Desktop does not inherit your shell's `PATH`. The `--allow-http` flag is required because `mcp-remote` blocks non-HTTPS URLs by default.
 
 ### 6. Restart Claude Desktop
 
